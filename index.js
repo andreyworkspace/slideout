@@ -67,6 +67,7 @@ function Slideout(options) {
 
   // Sets default values
   this._startOffsetX = 0;
+  this._startOffsetY = 0;
   this._currentOffsetX = 0;
   this._opening = false;
   this._moved = false;
@@ -74,6 +75,9 @@ function Slideout(options) {
   this._preventOpen = false;
   this._touch = options.touch === undefined ? true : options.touch && true;
   this._ignore = options.ignore;
+  this._allowableRegion = options.allowableRegion === undefined ? null : options.allowableRegion;
+  this._sizeSlideStart = options.sizeSlideStart || 0;
+  this._verticalAccuracy =  options.verticalAccuracy === undefined ? null : options.verticalAccuracy;
 
   // Sets panel
   this.panel = options.panel;
@@ -212,6 +216,7 @@ Slideout.prototype._initTouchEvents = function() {
     self._moved = false;
     self._opening = false;
     self._startOffsetX = eve.touches[0].pageX;
+    self._startOffsetY = eve.touches[0].pageY;
     self._preventOpen = (!self._touch || (!self.isOpen() && self.menu.clientWidth !== 0));
   };
 
@@ -244,12 +249,28 @@ Slideout.prototype._initTouchEvents = function() {
    * Translates panel on touchmove
    */
   this._onTouchMoveFn = function(eve) {
-
     if (scrolling || self._preventOpen || typeof eve.touches === 'undefined' || self._elementIsIgnored(eve.target)) {
       return;
     }
 
+    if(self._opened == false && self._allowableRegion !== null){
+      if(self._allowableRegion < self._startOffsetX){
+        return;
+      }
+    }
+
+    if(self._verticalAccuracy !== null){
+      if(Math.abs(eve.touches[0].pageY - self._startOffsetY) > self._verticalAccuracy){
+        return;
+      }
+    }
+
     var dif_x = eve.touches[0].clientX - self._startOffsetX;
+
+    if(Math.abs(dif_x) < self._sizeSlideStart){
+      return;
+    }
+    
     var translateX = self._currentOffsetX = dif_x;
 
     if (Math.abs(translateX) > self._padding) {
